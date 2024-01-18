@@ -1,6 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<!-- updated january to work with newer versions of jquery -->
+<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
@@ -9,31 +7,78 @@
 
 	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/themes/start/jquery-ui.css" type="text/css" media="screen" />
 
-	<style type="text/css">
-		body { width: 800px; margin: 0 auto; font-size: 8pt; }
-		h1 { margin: 0; padding: 20px; font-size: 16pt !important; }
-		#footer { margin: 0; padding: 5px 20px; text-align: right; }
-		#page-content { padding: 10px; }
-		#log { clear: left; }
-		#log_data { padding: 3px; height: 200px; overflow: scroll; margin: 0; }
-		.headline { margin: 0 10px 10px 0; width: 780px; float: left; }
-		.inverter { margin: 0 10px 10px 0; width: 377px; float: left; }
-		.inverter td { width: 50%; }
-		.inverter_heading, .inverter_content { padding: 5px; }
-		.inverter_heading { font-weight: bold; }
+	<style>
+		body {
+			width: 800px;
+			margin: 0 auto;
+			font-size: 8pt;
+		}
+
+		h1 {
+			margin: 0;
+			padding: 20px;
+			font-size: 16pt !important;
+		}
+
+		#footer {
+			margin: 0;
+			padding: 5px 20px;
+			text-align: right;
+		}
+
+		#page-content {
+			padding: 10px;
+		}
+
+		#log {
+			clear: left;
+		}
+
+		#log_data {
+			padding: 3px;
+			height: 200px;
+			overflow: scroll;
+			margin: 0;
+		}
+
+		.headline {
+			margin: 0 10px 10px 0;
+			width: 780px;
+			float: left;
+		}
+
+		.inverter {
+			margin: 0 10px 10px 0;
+			width: 377px;
+			float: left;
+		}
+
+		.inverter td {
+			width: 50%;
+		}
+
+		.inverter_heading,
+		.inverter_content {
+			padding: 5px;
+		}
+
+		.inverter_heading {
+			font-weight: bold;
+		}
 	</style>
 
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.13.2/jquery-ui.min.js"></script>
-	<script type="text/javascript">
+	<script>
 		$(document).ready(function() {
-			var log_page = 1;
+			let logPage = 1;
+
 			$("#log_data").on("scroll", function() {
-				var log_data = $('#log_data');
-				if(log_data[0].scrollHeight - log_data.scrollTop() <= log_data.outerHeight()) {
-					$.get("/log?page="+log_page, function(data) {
+				const logData = $('#log_data');
+				if (logData[0].scrollHeight - logData.scrollTop() <= logData.outerHeight()) {
+					$.get("/log?page=" + logPage, function(data) {
 						$("#log_data").append(data);
-						log_page++;
+						logPage++;
 					});
 				}
 			});
@@ -42,74 +87,74 @@
 				$(this).next(".inverter_details").slideToggle();
 			});
 
-			function update_page() {
+			function updatePage() {
 				$("#log_data").load("/log");
-				var inverter_count = 0;
+				let inverterCount = 0;
 				$.getJSON("/inverter-data", function(data) {
 					$("#data").html('');
-					$.each(data, function(inverter_id, inverter) {
+					$.each(data, function(inverterId, inverter) {
 						$("#data").append(`
-        <div class="ui-widget ui-widget-content inverter">
-			<div class="ui-widget ui-widget-content ui-state-highlight inverter_heading">${inverter.id_string}</div>
-			<div class="inverter_content">
-				<div>
-					<div style="color: darkgreen; font-size: 36pt; font-weight: bold; float: right;">${inverter.data.pac}<span style="font-size: 14pt;">W</span></div>
-					<div style="color: darkgreen; font-size: 14pt; font-weight: bold; padding-top: 6px;">Power<br />right now</div>
-				</div>
-				<div style="clear: right;">
-					<div style="color: darkblue; font-size: 26pt; font-weight: bold; float: right;">${inverter.data.e_today}<span style="font-size: 12pt;">kWh</span></div>
-					<div style="color: darkblue; font-size: 12pt; font-weight: bold; padding-top: 6px;">Total energy<br />today</div>
-				</div>
-				<div style="clear: right;">
-					<div style="color: darkgreen; font-size: 20pt; font-weight: bold; float: right;">${inverter.max.pac.watts}<span style="font-size: 10pt;">W</span></div>
-					<div style="color: darkgreen; font-size: 10pt; font-weight: bold; padding-top: 4px;">Max power<br />today (${inverter.max.pac.timestamp.split(' ')[1]})</div>
-				</div>
-				<div style="clear: right; font-size: 7pt;">
-					<table style="width: 50%; float: left; padding: 10px 0;">
-						<tr><td>AC Voltage (VAC)</td><td style="text-align: right;">${inverter.data.vac}V</td></tr>
-						<tr><td>AC Current (IAC)</td><td style="text-align: right;">${inverter.data.iac}A</td></tr>
-						<tr><td>AC frequency</td><td style="text-align: right;">${inverter.data.frequency}Hz</td></tr>
-						<tr><td>Last 365 days production</td><td style="text-align: right;">${inverter.data.d365}kWh</td></tr>
-					</table>
-					<table style="width: 50%; float: left; padding: 10px 0;">
-						<tr><td>PV Voltage (VPV)</td><td style="text-align: right;">${inverter.data.vpv}V</td></tr>
-						<tr><td>PV Current (IPV)</td><td style="text-align: right;">${inverter.data.ipv}A</td></tr>
-					</table>
-					<div style="clear: both;"></div>
-					<a href="#show" class="show_inverter_details">Show inverter details</a>
-					<table class="inverter_details" style="display: none; padding-top: 10px;">
-						<!-- <tr><td>Impedance</td><td>${inverter.data.impedance}</td></tr> -->
-						<tr><td>ID string</td><td>${inverter.id_string}</td></tr>
-						<tr><td>Serial number</td><td>${inverter.serial}</td></tr>
-						<tr><td>Total uptime</td><td>${inverter.data.hours_up} hours</td></tr>
-						<tr><td>Total energy</td><td>${inverter.data.e_total}kwh</td></tr>
-						<tr><td>Operation mode</td><td>${inverter.data.op_mode}</td></tr>
-						<tr><td>Inverter temperature</td><td>${inverter.data.temp}C</td></tr>
-						<tr><td>Updated</td><td>${inverter.data.timestamp}</td></tr>
-						<tr><td>Connect time</td><td>${inverter.connected}</td></tr>
-					</table>
-				</div>
-			</div>
-		</div>
-		`);
+							<div class="ui-widget ui-widget-content inverter">
+								<div class="ui-widget ui-widget-content ui-state-highlight inverter_heading">${inverter.id_string}</div>
+								<div class="inverter_content">
+									<div>
+										<div style="color: darkgreen; font-size: 36pt; font-weight: bold; float: right;">${inverter.data.pac}<span style="font-size: 14pt;">W</span></div>
+										<div style="color: darkgreen; font-size: 14pt; font-weight: bold; padding-top: 6px;">Power<br />right now</div>
+									</div>
+									<div style="clear: right;">
+										<div style="color: darkblue; font-size: 26pt; font-weight: bold; float: right;">${inverter.data.e_today}<span style="font-size: 12pt;">kWh</span></div>
+										<div style="color: darkblue; font-size: 12pt; font-weight: bold; padding-top: 6px;">Total energy<br />today</div>
+									</div>
+									<div style="clear: right;">
+										<div style="color: darkgreen; font-size: 20pt; font-weight: bold; float: right;">${inverter.max.pac.watts}<span style="font-size: 10pt;">W</span></div>
+										<div style="color: darkgreen; font-size: 10pt; font-weight: bold; padding-top: 4px;">Max power<br />today (${inverter.max.pac.timestamp.split(' ')[1]})</div>
+									</div>
+									<div style="clear: right; font-size: 7pt;">
+										<table style="width: 50%; float: left; padding: 10px 0;">
+											<tr><td>AC Voltage (VAC)</td><td style="text-align: right;">${inverter.data.vac}V</td></tr>
+											<tr><td>AC Current (IAC)</td><td style="text-align: right;">${inverter.data.iac}A</td></tr>
+											<tr><td>AC frequency</td><td style="text-align: right;">${inverter.data.frequency}Hz</td></tr>
+											<tr><td>Last 365 days production</td><td style="text-align: right;">${inverter.data.d365}kWh</td></tr>
+										</table>
+										<table style="width: 50%; float: left; padding: 10px 0;">
+											<tr><td>PV Voltage (VPV)</td><td style="text-align: right;">${inverter.data.vpv}V</td></tr>
+											<tr><td>PV Current (IPV)</td><td style="text-align: right;">${inverter.data.ipv}A</td></tr>
+										</table>
+										<div style="clear: both;"></div>
+										<a href="#show" class="show_inverter_details">Show inverter details</a>
+										<table class="inverter_details" style="display: none; padding-top: 10px;">
+											<!-- <tr><td>Impedance</td><td>${inverter.data.impedance}</td></tr> -->
+											<tr><td>ID string</td><td>${inverter.id_string}</td></tr>
+											<tr><td>Serial number</td><td>${inverter.serial}</td></tr>
+											<tr><td>Total uptime</td><td>${inverter.data.hours_up} hours</td></tr>
+											<tr><td>Total energy</td><td>${inverter.data.e_total}kwh</td></tr>
+											<tr><td>Operation mode</td><td>${inverter.data.op_mode}</td></tr>
+											<tr><td>Inverter temperature</td><td>${inverter.data.temp}C</td></tr>
+											<tr><td>Updated</td><td>${inverter.data.timestamp}</td></tr>
+											<tr><td>Connect time</td><td>${inverter.connected}</td></tr>
+										</table>
+									</div>
+								</div>
+							</div>
+						`);
 
-						inverter_count++;
+						inverterCount++;
 
-						if(inverter_count == 2) {
+						if (inverterCount == 2) {
 							$("#data").append(`<h2 class="inverter"><div style="color: darkgreen; font-size: 16pt; font-weight: bold; float: center;">Combined Power Right Now<br />${inverter.data.total_power} W<br></div></h2>`);
 							$("#data").append(`<h2 class="inverter"><div style="color: darkblue; font-size: 16pt; font-weight: bold; float: center;">Combined Energy Today<br />${inverter.data.total_daykwh} kWh</div></h2>`);
 						}
 					});
 
-					if (!inverter_count) {
+					if (!inverterCount) {
 						$("#data").html('<h2 class="inverter">No inverters connected</h2>');
 					}
 				});
 
-				setTimeout(update_page, 300000);
+				setTimeout(updatePage, 300000);
 			}
 
-			update_page();
+			updatePage();
 		});
 	</script>
 </head>

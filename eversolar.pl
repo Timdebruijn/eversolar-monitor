@@ -95,7 +95,10 @@
 #
 # Version 0.191 january 2022 - Changes by Henrik Jørgemsem
 #       - Changed naming of Home Assistant Entities, so they group nicely in HASS
-#
+# Version 0.192 january 2024 - Changes by Tim de Bruijn
+#       - refactored the Home Assistant MQTT code
+#       - send the correct date format to mqtt in home assistant  
+
 # Eversolar communications packet definition:
 # 0xaa, 0x55, 	# header
 # 0x00, 0x00, 	# source address

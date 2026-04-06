@@ -1073,10 +1073,9 @@ while (42) {
                       . $inverters{$inverter}{"serial"} );
 
                 my $stmt =
-                  "select min(e_total) as mins from daily where timestamp  >=   date('now', '-365 day') and serial_number = '"
-                  . $inverters{$inverter}{"serial"} . "'";
+                  "select min(e_total) as mins from daily where timestamp  >=   date('now', '-365 day') and serial_number = ?";
                 my $sth = $dbh->prepare($stmt);
-                my $rv  = $sth->execute() or die $DBI::errstr;
+                my $rv  = $sth->execute($inverters{$inverter}{"serial"}) or die $DBI::errstr;
                 if ( $rv < 0 ) {
                      print $DBI::errstr;
                 }

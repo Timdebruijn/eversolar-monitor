@@ -1069,7 +1069,7 @@ while (42) {
             $combined_daykwh = $combined_daykwh + $data[ $DATA_BYTES{'E_TODAY'} ] / 100;
 
             if ( $inverters{$inverter}{"daily_retrieved"} == 0 ) {
-                pmu_log( "Severity 3, select min(e_total) as mins from daily where timestamp  >=   date('now', '-1 year') and serial_number = "
+                pmu_log( "Severity 3, select min(e_total) as mins from daily where timestamp >= date('now', '-365 day') and serial_number = "
                       . $inverters{$inverter}{"serial"} );
 
                 my $stmt =
@@ -1153,7 +1153,7 @@ while (42) {
                     $inverters{$inverter}{"data"}{"hours_up"},
                     $inverters{$inverter}{"data"}{"op_mode"},
                     $inverters{$inverter}{"data"}{"temp"}
-                ) or die $DBI::errstr;
+                ) or pmu_log("Severity 1, failed to insert inverter data for " . $inverters{$inverter}{"serial"} . ": " . $DBI::errstr);
             }
 
             if ( $data[ $DATA_BYTES{'PAC'} ] > $inverters{$inverter}{"max"}{"pac"}{"watts"} ) {
@@ -1655,17 +1655,19 @@ while (42) {
                          pmax_time)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                $sth_daily->execute(
+                if ( $sth_daily->execute(
                     $inverters{$inverter}{"serial"},
                     $inverters{$inverter}{"data"}{"timestamp"},
                     $inverters{$inverter}{"data"}{"e_today"},
                     $inverters{$inverter}{"data"}{"e_total"},
                     $inverters{$inverter}{"max"}{"pac"}{"watts"},
                     $inverters{$inverter}{"max"}{"pac"}{"timestamp"}
-                ) or die $DBI::errstr;
-                
-                $inverters{$inverter}{"daily_stored"} = 1;
-                pmu_log("Severity 3, daily stored because end of day");
+                ) ) {
+                    $inverters{$inverter}{"daily_stored"} = 1;
+                    pmu_log("Severity 3, daily stored because end of day");
+                } else {
+                    pmu_log("Severity 1, failed to store daily entry: " . $sth_daily->errstr);
+                }
             }
             
             if ( $hour == 1 && $min == 1 ) {
@@ -1702,17 +1704,18 @@ while (42) {
                          pmax_time)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                $sth_daily_timeout->execute(
+                if ( $sth_daily_timeout->execute(
                     $inverters{$inverter}{"serial"},
                     $inverters{$inverter}{"data"}{"timestamp"},
                     $inverters{$inverter}{"data"}{"e_today"},
                     $inverters{$inverter}{"data"}{"e_total"},
                     $inverters{$inverter}{"max"}{"pac"}{"watts"},
                     $inverters{$inverter}{"max"}{"pac"}{"timestamp"}
-                ) or die $DBI::errstr;
-                    
-                pmu_log("Severity 4, daily store insert statement: $stmt");
-                pmu_log("Severity 2, daily stored because inverter removed");
+                ) ) {
+                    pmu_log("Severity 2, daily stored because inverter removed");
+                } else {
+                    pmu_log("Severity 1, failed to store daily entry for removed inverter " . $inverters{$inverter}{"serial"} . ": " . $DBI::errstr);
+                }
 
                 # forget about the inverter
                 delete $inverters{$inverter};

@@ -1116,7 +1116,7 @@ while (42) {
             if ( $config->database_log ) {
 
                 # store in db
-                my $sth_inv = $dbh->prepare("
+                my $sth_inv = $dbh->prepare_cached("
                 INSERT INTO inverter
                     (serial_number,
                      timestamp,
@@ -1136,24 +1136,29 @@ while (42) {
                      temp)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
-                $sth_inv->execute(
-                    $inverters{$inverter}{"serial"},
-                    $inverters{$inverter}{"data"}{"timestamp"},
-                    $inverters{$inverter}{"data"}{"pac"},
-                    $inverters{$inverter}{"data"}{"e_today"},
-                    $inverters{$inverter}{"data"}{"e_total"},
-                    $inverters{$inverter}{"data"}{"vpv"},
-                    $inverters{$inverter}{"data"}{"vpv2"},
-                    $inverters{$inverter}{"data"}{"ipv"},
-                    $inverters{$inverter}{"data"}{"ipv2"},
-                    $inverters{$inverter}{"data"}{"vac"},
-                    $inverters{$inverter}{"data"}{"iac"},
-                    $inverters{$inverter}{"data"}{"frequency"},
-                    $inverters{$inverter}{"data"}{"impedance"},
-                    $inverters{$inverter}{"data"}{"hours_up"},
-                    $inverters{$inverter}{"data"}{"op_mode"},
-                    $inverters{$inverter}{"data"}{"temp"}
-                ) or pmu_log("Severity 1, failed to insert inverter data for " . $inverters{$inverter}{"serial"} . ": " . $DBI::errstr);
+                if ( !defined $sth_inv ) {
+                    pmu_log("Severity 1, failed to prepare inverter data insert for " . $inverters{$inverter}{"serial"} . ": " . $dbh->errstr);
+                }
+                else {
+                    $sth_inv->execute(
+                        $inverters{$inverter}{"serial"},
+                        $inverters{$inverter}{"data"}{"timestamp"},
+                        $inverters{$inverter}{"data"}{"pac"},
+                        $inverters{$inverter}{"data"}{"e_today"},
+                        $inverters{$inverter}{"data"}{"e_total"},
+                        $inverters{$inverter}{"data"}{"vpv"},
+                        $inverters{$inverter}{"data"}{"vpv2"},
+                        $inverters{$inverter}{"data"}{"ipv"},
+                        $inverters{$inverter}{"data"}{"ipv2"},
+                        $inverters{$inverter}{"data"}{"vac"},
+                        $inverters{$inverter}{"data"}{"iac"},
+                        $inverters{$inverter}{"data"}{"frequency"},
+                        $inverters{$inverter}{"data"}{"impedance"},
+                        $inverters{$inverter}{"data"}{"hours_up"},
+                        $inverters{$inverter}{"data"}{"op_mode"},
+                        $inverters{$inverter}{"data"}{"temp"}
+                    ) or pmu_log("Severity 1, failed to insert inverter data for " . $inverters{$inverter}{"serial"} . ": " . $sth_inv->errstr);
+                }
             }
 
             if ( $data[ $DATA_BYTES{'PAC'} ] > $inverters{$inverter}{"max"}{"pac"}{"watts"} ) {
@@ -1655,7 +1660,9 @@ while (42) {
                          pmax_time)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                if ( $sth_daily->execute(
+                if ( !defined $sth_daily ) {
+                    pmu_log("Severity 1, failed to prepare daily entry: " . $dbh->errstr);
+                } elsif ( $sth_daily->execute(
                     $inverters{$inverter}{"serial"},
                     $inverters{$inverter}{"data"}{"timestamp"},
                     $inverters{$inverter}{"data"}{"e_today"},
@@ -1704,7 +1711,9 @@ while (42) {
                          pmax_time)
                     VALUES (?, ?, ?, ?, ?, ?)
                 ");
-                if ( $sth_daily_timeout->execute(
+                if ( !defined $sth_daily_timeout ) {
+                    pmu_log("Severity 1, failed to prepare daily entry for removed inverter " . $inverters{$inverter}{"serial"} . ": " . $dbh->errstr);
+                } elsif ( $sth_daily_timeout->execute(
                     $inverters{$inverter}{"serial"},
                     $inverters{$inverter}{"data"}{"timestamp"},
                     $inverters{$inverter}{"data"}{"e_today"},
@@ -1714,7 +1723,7 @@ while (42) {
                 ) ) {
                     pmu_log("Severity 2, daily stored because inverter removed");
                 } else {
-                    pmu_log("Severity 1, failed to store daily entry for removed inverter " . $inverters{$inverter}{"serial"} . ": " . $DBI::errstr);
+                    pmu_log("Severity 1, failed to store daily entry for removed inverter " . $inverters{$inverter}{"serial"} . ": " . $sth_daily_timeout->errstr);
                 }
 
                 # forget about the inverter

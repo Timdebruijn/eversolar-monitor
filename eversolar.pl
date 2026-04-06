@@ -1116,7 +1116,7 @@ while (42) {
             if ( $config->database_log ) {
 
                 # store in db
-                $dbh->do( "
+                my $sth_inv = $dbh->prepare("
                 INSERT INTO inverter
                     (serial_number,
                      timestamp,
@@ -1134,25 +1134,26 @@ while (42) {
                      hours_up,
                      op_mode,
                      temp)
-                VALUES
-                    ('" . $inverters{$inverter}{"serial"} . "',
-                     '" . $inverters{$inverter}{"data"}{"timestamp"} . "',
-                     '" . $inverters{$inverter}{"data"}{"pac"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_today"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_total"} . "',
-                     '" . $inverters{$inverter}{"data"}{"vpv"} . "',
-                     '" . $inverters{$inverter}{"data"}{"vpv2"} . "',
-                     '" . $inverters{$inverter}{"data"}{"ipv"} . "',
-                     '" . $inverters{$inverter}{"data"}{"ipv2"} . "',
-                     '" . $inverters{$inverter}{"data"}{"vac"} . "',
-                     '" . $inverters{$inverter}{"data"}{"iac"} . "',
-                     '" . $inverters{$inverter}{"data"}{"frequency"} . "',
-                     '" . $inverters{$inverter}{"data"}{"impedance"} . "',
-                     '" . $inverters{$inverter}{"data"}{"hours_up"} . "',
-                     '" . $inverters{$inverter}{"data"}{"op_mode"} . "',
-                     '" . $inverters{$inverter}{"data"}{"temp"} . "'
-                    )
-            " );
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+                $sth_inv->execute(
+                    $inverters{$inverter}{"serial"},
+                    $inverters{$inverter}{"data"}{"timestamp"},
+                    $inverters{$inverter}{"data"}{"pac"},
+                    $inverters{$inverter}{"data"}{"e_today"},
+                    $inverters{$inverter}{"data"}{"e_total"},
+                    $inverters{$inverter}{"data"}{"vpv"},
+                    $inverters{$inverter}{"data"}{"vpv2"},
+                    $inverters{$inverter}{"data"}{"ipv"},
+                    $inverters{$inverter}{"data"}{"ipv2"},
+                    $inverters{$inverter}{"data"}{"vac"},
+                    $inverters{$inverter}{"data"}{"iac"},
+                    $inverters{$inverter}{"data"}{"frequency"},
+                    $inverters{$inverter}{"data"}{"impedance"},
+                    $inverters{$inverter}{"data"}{"hours_up"},
+                    $inverters{$inverter}{"data"}{"op_mode"},
+                    $inverters{$inverter}{"data"}{"temp"}
+                ) or die $DBI::errstr;
             }
 
             if ( $data[ $DATA_BYTES{'PAC'} ] > $inverters{$inverter}{"max"}{"pac"}{"watts"} ) {
@@ -1644,7 +1645,7 @@ while (42) {
             # Store daily entry end of the day
             if ( $hour == 22 && $min == 58 && $inverters{$inverter}{"daily_stored"} == 0 ) {
                 # store a daily entry
-                $dbh->do( "
+                my $sth_daily = $dbh->prepare("
                     INSERT INTO daily
                         (serial_number,
                          timestamp,
@@ -1652,14 +1653,16 @@ while (42) {
                          e_total,
                          pmax_today,
                          pmax_time)
-                VALUES
-                    ('" . $inverters{$inverter}{"serial"} . "',
-                     '" . $inverters{$inverter}{"data"}{"timestamp"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_today"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_total"} . "',
-                     '" . $inverters{$inverter}{"max"}{"pac"}{"watts"} . "',
-                     '" . $inverters{$inverter}{"max"}{"pac"}{"timestamp"} . "'
-                    )" );
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $sth_daily->execute(
+                    $inverters{$inverter}{"serial"},
+                    $inverters{$inverter}{"data"}{"timestamp"},
+                    $inverters{$inverter}{"data"}{"e_today"},
+                    $inverters{$inverter}{"data"}{"e_total"},
+                    $inverters{$inverter}{"max"}{"pac"}{"watts"},
+                    $inverters{$inverter}{"max"}{"pac"}{"timestamp"}
+                ) or die $DBI::errstr;
                 
                 $inverters{$inverter}{"daily_stored"} = 1;
                 pmu_log("Severity 3, daily stored because end of day");
@@ -1689,7 +1692,7 @@ while (42) {
                 pmu_log( "Severity 1, " . $inverters{$inverter}{"serial"} . " lost contact with inverter, forgetting inverter" );
 
                 # store a daily entry
-                $stmt = "
+                my $sth_daily_timeout = $dbh->prepare("
                     INSERT INTO daily
                         (serial_number,
                          timestamp,
@@ -1697,16 +1700,16 @@ while (42) {
                          e_total,
                          pmax_today,
                          pmax_time)
-                VALUES
-                    ('" . $inverters{$inverter}{"serial"} . "',
-                     '" . $inverters{$inverter}{"data"}{"timestamp"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_today"} . "',
-                     '" . $inverters{$inverter}{"data"}{"e_total"} . "',
-                     '" . $inverters{$inverter}{"max"}{"pac"}{"watts"} . "',
-                     '" . $inverters{$inverter}{"max"}{"pac"}{"timestamp"} . "'
-                    )";
-                
-                $dbh->do( $stmt );
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $sth_daily_timeout->execute(
+                    $inverters{$inverter}{"serial"},
+                    $inverters{$inverter}{"data"}{"timestamp"},
+                    $inverters{$inverter}{"data"}{"e_today"},
+                    $inverters{$inverter}{"data"}{"e_total"},
+                    $inverters{$inverter}{"max"}{"pac"}{"watts"},
+                    $inverters{$inverter}{"max"}{"pac"}{"timestamp"}
+                ) or die $DBI::errstr;
                     
                 pmu_log("Severity 4, daily store insert statement: $stmt");
                 pmu_log("Severity 2, daily stored because inverter removed");
